@@ -23,7 +23,7 @@ class Day02 : IDayCommand
       return new Game(gameId, sets.ToList());      
     });
 
-    // Determine impossible games
+    // Determine possible games
     var possibleGames = games.Where(game => game.Sets.All(set => set.All(pick => pick.Value <= bag[pick.Key]))).Select(game => game.Id);
     var sumOfPossibleGames = possibleGames.Sum();
 
@@ -37,7 +37,7 @@ class Day02 : IDayCommand
     });
 
     return $"""
-    The sum of the ids of impossible games is {sumOfPossibleGames}
+    The sum of the ids of possible games is {sumOfPossibleGames}
     The sum of the power sets is {powerOfGameSets.Sum()}
     """;
 
