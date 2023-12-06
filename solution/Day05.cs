@@ -64,18 +64,18 @@ class Day05 : IDayCommand
       .Select(i => (Seeds[i * 2], Seeds[i * 2] + Seeds[i * 2 + 1] - 1))
       .ToList();
 
-    var locationsRanges = SeedRanges;    
-    locationsRanges = ApplyMapToRanges(locationsRanges, SeedToSoil);
-    locationsRanges = ApplyMapToRanges(locationsRanges, SoilToFertilizer);
-    locationsRanges = ApplyMapToRanges(locationsRanges, FertilizerToWater);
-    locationsRanges = ApplyMapToRanges(locationsRanges, WaterToLight);
-    locationsRanges = ApplyMapToRanges(locationsRanges, LightToTemperature);
-    locationsRanges = ApplyMapToRanges(locationsRanges, TemperatureToHumidity);
-    locationsRanges = ApplyMapToRanges(locationsRanges, HumidityToLocation);
+    var locationsRanges = SeedRanges;
+    locationsRanges = ApplyMapToRange(locationsRanges, SeedToSoil);
+    locationsRanges = ApplyMapToRange(locationsRanges, SoilToFertilizer);
+    locationsRanges = ApplyMapToRange(locationsRanges, FertilizerToWater);
+    locationsRanges = ApplyMapToRange(locationsRanges, WaterToLight);
+    locationsRanges = ApplyMapToRange(locationsRanges, LightToTemperature);
+    locationsRanges = ApplyMapToRange(locationsRanges, TemperatureToHumidity);
+    locationsRanges = ApplyMapToRange(locationsRanges, HumidityToLocation);
 
     return $"""
       The lowest location is {locations.Min()}
-      The lowest location considering ranges is {locationsRanges[0].start}
+      The lowest location considering ranges is {locationsRanges.Min().start}
       """;
   }
 
@@ -91,51 +91,37 @@ class Day05 : IDayCommand
     return input;
   }
 
-  public List<(long start, long end)> ApplyMapToRanges(List<(long start, long end)> sourceRanges, RangeMap conversionMap)
+  public List<(long start, long end)> ApplyMapToRange(List<(long start, long end)> sources, RangeMap conversionMap)
   {
-    return sourceRanges.SelectMany(sourceRange => {      
-      // Find all the intersections
-      var intersections = conversionMap.Where(
-        conversionEntry => !(conversionEntry.sourceStart > sourceRange.end || conversionEntry.sourceEnd < sourceRange.end)
-      ).OrderBy(conversionEntry => conversionEntry.sourceStart)
-       .ToList();
-
-      // In case there are no intersections, just return the range itself
-      if(intersections.Count() == 0)
+    return sources.SelectMany(source => {
+      var toBeEvaluated = new List<(long start, long end)>();
+      toBeEvaluated.AddRange(conversionMap
+        .Where(cm => cm.sourceStart <= source.end && cm.sourceEnd >= source.start)
+        .Select(cm => (cm.sourceStart < source.start? source.start : cm.sourceStart, cm.sourceEnd > source.end? source.end : cm.sourceEnd))
+      );
+      
+      if(toBeEvaluated.Count == 0)
       {
-        return new List<(long start, long end)>{sourceRange};
+        // If there is no conversion map that affects this range the return is itself
+        return new List<(long start, long end)>(){};
+      }
+      toBeEvaluated.Sort();
+      
+      //Adjust first and last entries (gap adjustment is not necessary)
+      var firstEntry = toBeEvaluated[0];
+      var lastEntry = toBeEvaluated.Last();
+      if(firstEntry.start > source.start)
+      {
+        toBeEvaluated.Add((source.start, firstEntry.start -1));
       }
 
-      // Cap the start and end in case they "overflow"
-      intersections = intersections.Select(intersection => {
-        var startSource = intersection.sourceStart < sourceRange.start? sourceRange.start : intersection.sourceStart;
-        var endSource = intersection.sourceEnd > sourceRange.end ? sourceRange.end : intersection.sourceEnd;
-        return (startSource, intersection.destinationOffset, endSource);
-      }).OrderBy(intersection => intersection.startSource)
-        .ToList();
-
-      // Add all gaps as conversion sources that map 1:1
-      var intersectionsWithNoGap = new RangeMap();
-      var currentStart = sourceRange.start;
-      foreach (var intersection in intersections)
+      if(lastEntry.end < source.end)
       {
-        if(currentStart < intersection.sourceStart)
-        {
-          intersectionsWithNoGap.Add((currentStart, 0, intersection.sourceStart - 1));
-        }
-        intersectionsWithNoGap.Add(intersection);
-        currentStart = intersection.sourceEnd + 1;
-      }
-      var lastIntersection = intersectionsWithNoGap.Last();
-      var lastPosition = lastIntersection.sourceEnd + 1;
-      if(lastPosition < sourceRange.end)
-      {
-        intersectionsWithNoGap.Add((lastPosition, 0, sourceRange.end));       
-      }
+        toBeEvaluated.Add((lastEntry.end + 1, source.end));
+      }      
 
-      // Now, convert all the intersections to the destinations based on the range            
-      return intersectionsWithNoGap.Select(intersection => (ApplyMap(intersection.sourceStart, intersectionsWithNoGap), ApplyMap(intersection.sourceEnd, intersectionsWithNoGap)));
-    }).OrderBy(item => item.Item1).ToList();
+      return toBeEvaluated.Select(tb => (ApplyMap(tb.start, conversionMap), ApplyMap(tb.end, conversionMap))).ToList();
+    }).OrderBy(r => r.Item1).ToList(); 
   }
 
 }
