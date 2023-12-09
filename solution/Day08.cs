@@ -21,7 +21,7 @@ class Day08 : IDayCommand
 
     return $"""
     The number of steps to reach "ZZZ" is {stepsPart01}
-    The total Winnings with Joker is {stepsPart02}
+    The number of steps to reach all end nodes at the same time is {stepsPart02}
     """;
   }
 
