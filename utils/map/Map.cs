@@ -1,3 +1,15 @@
+enum NodeDirection 
+{
+  NORTH = 'N',
+  SOUTH = 'S',
+  WEST = 'W',
+  EAST = 'E',
+  NORTH_WEST = 'F',
+  NORTH_EAST = '7',
+  SOUTH_WEST = 'L',
+  SOUTH_EAST = 'J',
+}
+
 class Map<T>
 {
   public HashSet<Node<T>> Nodes { get; init; } = new();
@@ -6,32 +18,32 @@ class Map<T>
   {
     // Set the adjacent ones
     var mapAsArray = map.Select(line => line.ToArray()).ToArray();
-    for (int i = 0; i < mapAsArray.Count(); i++)
+    for (int lineIndex = 0; lineIndex < mapAsArray.Count(); lineIndex++)
     {
-      for (int j = 0; j < mapAsArray[i].Count(); j++)
+      for (int columnIndex = 0; columnIndex < mapAsArray[lineIndex].Count(); columnIndex++)
       {
-        var currentNode = mapAsArray[i][j];
+        var currentNode = mapAsArray[lineIndex][columnIndex];
         Nodes.Add(currentNode);
-        if (i - 1 >= 0) currentNode.AdjacentNodes.Add(mapAsArray[i - 1][j]);
-        if (i + 1 < map.Count()) currentNode.AdjacentNodes.Add(mapAsArray[i + 1][j]);
-        if (j - 1 >= 0) currentNode.AdjacentNodes.Add(mapAsArray[i][j - 1]);
-        if (j + 1 < mapAsArray[i].Count()) currentNode.AdjacentNodes.Add(mapAsArray[i][j + 1]);
+        if (lineIndex - 1 >= 0) currentNode.AdjacentNodes.Add(NodeDirection.NORTH, mapAsArray[lineIndex - 1][columnIndex]);
+        if (lineIndex + 1 < map.Count()) currentNode.AdjacentNodes.Add(NodeDirection.SOUTH, mapAsArray[lineIndex + 1][columnIndex]);
+        if (columnIndex - 1 >= 0) currentNode.AdjacentNodes.Add(NodeDirection.WEST, mapAsArray[lineIndex][columnIndex - 1]);
+        if (columnIndex + 1 < mapAsArray[lineIndex].Count()) currentNode.AdjacentNodes.Add(NodeDirection.EAST, mapAsArray[lineIndex][columnIndex + 1]);
 
         if (considerDiagonals)
         {
-          if (i - 1 >= 0 && j - 1 >= 0) currentNode.AdjacentNodes.Add(mapAsArray[i - 1][j - 1]);
-          if (i - 1 >= 0 && j + 1 < mapAsArray[i].Count()) currentNode.AdjacentNodes.Add(mapAsArray[i - 1][j + 1]);
-          if (i + 1 < map.Count() && j - 1 >= 0) currentNode.AdjacentNodes.Add(mapAsArray[i + 1][j - 1]);
-          if (i + 1 < map.Count() && j + 1 < mapAsArray[i].Count()) currentNode.AdjacentNodes.Add(mapAsArray[i + 1][j + 1]);
+          if (lineIndex - 1 >= 0 && columnIndex - 1 >= 0) currentNode.AdjacentNodes.Add(NodeDirection.NORTH_WEST, mapAsArray[lineIndex - 1][columnIndex - 1]);
+          if (lineIndex - 1 >= 0 && columnIndex + 1 < mapAsArray[lineIndex].Count()) currentNode.AdjacentNodes.Add(NodeDirection.SOUTH_EAST, mapAsArray[lineIndex - 1][columnIndex + 1]);
+          if (lineIndex + 1 < map.Count() && columnIndex - 1 >= 0) currentNode.AdjacentNodes.Add(NodeDirection.SOUTH_WEST, mapAsArray[lineIndex + 1][columnIndex - 1]);
+          if (lineIndex + 1 < map.Count() && columnIndex + 1 < mapAsArray[lineIndex].Count()) currentNode.AdjacentNodes.Add(NodeDirection.SOUTH_EAST, mapAsArray[lineIndex + 1][columnIndex + 1]);
         }
       }
     }
   }
 
-  public List<Node<T>> GetOptimalPath(Node<T> start, Node<T> end)
+  public (List<Node<T>> path, long cost) GetOptimalPath(Node<T> start, Node<T> end)
   {
     var alreadyVisitedNodes = new HashSet<Node<T>>();
-    var paths = new PriorityQueue<(int costSum, Node<T>[] path), int>();
+    var paths = new PriorityQueue<(long costSum, Node<T>[] path), long>();
 
     paths.Enqueue((0, new Node<T>[] { start }), 0);
 
@@ -41,20 +53,19 @@ class Map<T>
       var currentNode = currentPath.path.Last();
       if (currentNode == end)
       {
-        return currentPath.path.ToList();
+        return (currentPath.path.ToList(), currentPath.costSum);
       }
-
       if (alreadyVisitedNodes.Contains(currentNode))
       {
         continue;
       }
       alreadyVisitedNodes.Add(currentNode);
 
-      var nextInLine = currentNode.AdjacentNodes.Where(n => !alreadyVisitedNodes.Contains(n));
+      var nextInLine = currentNode.AdjacentNodes.Where(n => !alreadyVisitedNodes.Contains(n.Value));
       var withCost = nextInLine.Select(adjNode =>
       {
-        var newCost = currentPath.costSum + currentNode.GetTravelCost(currentNode, adjNode);
-        return ((newCost, currentPath.path.Append(adjNode).ToArray()), newCost);
+        var newCost = currentPath.costSum + currentNode.GetTravelCost(currentNode, adjNode.Value);
+        return ((newCost, currentPath.path.Append(adjNode.Value).ToArray()), newCost);
       });
 
       paths.EnqueueRange(withCost);

@@ -15,7 +15,7 @@ class Day09 : IDayCommand
 
     return $"""
     The sum of the right extrapolated histories for all sequences is {sumOfExtrapolatedValuesRight}
-    The sum of the left extrapolated histories for all sequences is{sumOfExtrapolatedValuesLeft}
+    The sum of the left extrapolated histories for all sequences is {sumOfExtrapolatedValuesLeft}
     """;
   }
 
