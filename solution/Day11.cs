@@ -5,6 +5,8 @@ class Day11 : IDayCommand
 
     // Parsing shenanigans
     var lines = new FileReader(11).Read().ToList();
+    
+    Console.WriteLine("Go take a nap. The solution takes a while to calculate 🤡");
 
     var linesThatExpand = lines.Select((line, index) => (index, line))
                                .Where(lineAndIndex => lineAndIndex.line
@@ -22,8 +24,6 @@ class Day11 : IDayCommand
     var nodeMapPart02 = GenerateNodeMap(lines, linesThatExpand, columnsThatExpand, 1000000);
 
     var map = new Map<(char id, Point2D<int> position)>(nodeMapPart02);
-
-    Console.WriteLine("Go take a nap. The solution takes a while to calculate 🤡");
 
     var galaxiesPart01 = nodeMapPart01.SelectMany(line => line.Where(node => node.Value.id == '#')).ToList();
     var galaxyPairsPart01 = ComputePairs(map, galaxiesPart01);
