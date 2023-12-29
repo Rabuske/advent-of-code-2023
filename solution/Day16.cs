@@ -157,7 +157,7 @@ class Day16 : IDayCommand
 
     return $"""
       The number of Energized tiles is {totalVisitedPart01.Count}
-      The best config energizes {bestConfig} tiles
+      The best config energizes {bestConfig  } tiles
       """;
   }
 
